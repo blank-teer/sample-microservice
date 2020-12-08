@@ -1,0 +1,32 @@
+api-server:
+  http:
+    auth-required: false
+    listen-address: 0.0.0.0:3444
+
+message-broker:
+  type: nats
+  connection-address: localhost:4222
+  service-name: order-manager
+  max-retries: 5
+  retry-delay-ms: 1000
+  request-timeout: 60
+  name: name
+  pass: pass
+
+storage:
+  postgres:
+    connection-string: "postgres://postgres:postgres@localhost:5432/order_manager?sslmode=disable"
+    driver: postgres
+    max-retries: 5
+    retry-delay: 1000
+    query-timeout: 2000
+    auto-migrate: true
+    migration-directory: "dbschema/migrations"
+    migration-direction: "up"
+
+logger:
+  output-file-path:
+  debug-level: debug
+  log-format: text
+  include-caller-method:
+  requests-log-output-file-path:

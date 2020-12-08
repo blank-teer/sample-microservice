@@ -1,0 +1,374 @@
+basePath: /v3/ord
+definitions:
+  models.Coverage:
+    properties:
+      amount:
+        example: 60
+        type: integer
+      emission_id:
+        format: uuid
+        type: string
+      order_id:
+        format: uuid
+        type: string
+    required:
+    - amount
+    - emission_id
+    - order_id
+    type: object
+  models.Emission:
+    properties:
+      base_currency:
+        example: EUR
+        type: string
+      base_currency_amount:
+        description: BaseCurrencyAmount is summary fiat amount covered by this emission
+        example: 100
+        type: integer
+      coverage:
+        description: Coverage is an array of pairs 'order - coverage amount' that says how much the order is covered by this emission
+        items:
+          $ref: '#/definitions/models.Coverage'
+        type: array
+      created_at:
+        example: 1598884059
+        type: integer
+      details:
+        description: Details is detailed information about emission in raw json format
+        example: '{''field1'':''value1'', ''field2'':''value2''}'
+        format: json
+        type: string
+      gold_amount:
+        example: 30
+        type: integer
+      gold_unit:
+        example: grams
+        type: string
+      id:
+        format: uuid
+        type: string
+      num:
+        description: Num is a serial number of the emission in the database
+        example: 3
+        type: integer
+      rate_base_to_unit:
+        example: 12.5
+        type: number
+      reference:
+        description: Reference is any additional (unnecessary) information about emission
+        example: any text
+        type: string
+      type:
+        enum:
+        - deposit
+        - withdraw
+        type: string
+      updated_at:
+        example: 1598884069
+        type: integer
+    required:
+    - base_currency
+    - base_currency_amount
+    - coverage
+    - details
+    - gold_amount
+    - gold_unit
+    - rate_base_to_unit
+    - type
+    type: object
+  models.Order:
+    properties:
+      base_currency:
+        description: BaseCurrency is a currency we convert every order currency to
+        example: EUR
+        type: string
+      base_currency_amount:
+        example: 100
+        type: integer
+      base_currency_price:
+        example: 100.5
+        format: double
+        type: number
+      coins:
+        example: 200
+        type: integer
+      created_at:
+        example: 1598884059
+        type: integer
+      fee:
+        example: 50
+        type: integer
+      id:
+        format: uuid
+        type: string
+      pay_currency:
+        description: PayCurrency is a currency of the user's order
+        example: UAH
+        type: string
+      pay_currency_amount:
+        example: 200
+        type: integer
+      pay_currency_price:
+        example: 200.5
+        format: double
+        type: number
+      provider:
+        description: Provider is a name of the service initiated the request to create order
+        example: acq
+        type: string
+      rate_pay_to_base:
+        example: 1.5
+        format: double
+        type: number
+      status:
+        enum:
+        - new
+        - paid
+        - issued
+        - failed
+        type: string
+      type:
+        enum:
+        - deposit
+        - withdraw
+        type: string
+      updated_at:
+        example: 1598884069
+        type: integer
+      user_id:
+        description: UserID is salted user id which encrypts real user id persisted in database and used by backend as integer value
+        example: KJO3XGN63QAAG
+        type: string
+      wallet_address:
+        description: WalletAddress is a user's cosmos wallet address from which the order was paid
+        example: cosmos1nrxyjtv3vl2p4hqfx6mdpn7yrakzh9dwxnyd8a
+        type: string
+    required:
+    - base_currency
+    - base_currency_amount
+    - base_currency_price
+    - coins
+    - fee
+    - pay_currency
+    - pay_currency_amount
+    - pay_currency_price
+    - provider
+    - rate_pay_to_base
+    - type
+    - user_id
+    - wallet_address
+    type: object
+  order-manager_pkg_api_v3_delivery_rest_handlers.ResponseDataCreate:
+    properties:
+      emission_id:
+        format: uuid
+        type: string
+    type: object
+  pkg_api_v3_delivery_rest_handlers.ResponseDataCreate:
+    properties:
+      emission_id:
+        format: uuid
+        type: string
+    type: object
+  render.BodyError:
+    properties:
+      message:
+        example: something went wrong
+        type: string
+      status:
+        default: error
+        type: string
+    type: object
+  render.BodySuccess:
+    properties:
+      data:
+        type: object
+      status:
+        default: success
+        type: string
+    type: object
+info:
+  contact:
+    name: Some Cool Company
+  description: Endpoints documentation.
+  license:
+    name: All rights reserve.
+  title: Order-Manager REST API
+  version: "1.0"
+paths:
+  /adm/emission:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Token retrieved from admin-api by /auth endpoint.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Emission content
+        in: body
+        name: emission
+        required: true
+        schema:
+          $ref: '#/definitions/models.Emission'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/render.BodySuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/order-manager_pkg_api_v3_delivery_rest_handlers.ResponseDataCreate'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/render.BodyError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/render.BodyError'
+      summary: Create
+      tags:
+      - Emission
+  /adm/orders:
+    get:
+      parameters:
+      - description: Token retrieved from admin-api by /auth endpoint.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Filter by order type
+        enum:
+        - deposit
+        - withdraw
+        in: query
+        name: type
+        type: string
+      - description: Filter by coverage
+        enum:
+        - not
+        - fully
+        - partially
+        in: query
+        name: coverage
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/render.BodySuccess'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Order'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/render.BodyError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/render.BodyError'
+      summary: Get all
+      tags:
+      - Orders
+  /adm/orders/{orderID}:
+    get:
+      parameters:
+      - description: Token retrieved from admin-api by /auth endpoint.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Order ID (in UUID format)
+        in: path
+        name: orderID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/render.BodySuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Order'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/render.BodyError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/render.BodyError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/render.BodyError'
+      summary: Get by id
+      tags:
+      - Orders
+  /status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/render.BodySuccess'
+      summary: Get service status
+      tags:
+      - Meta
+  /user/orders:
+    get:
+      parameters:
+      - description: Token retrieved from user-api by /login endpoint.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/render.BodySuccess'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Order'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/render.BodyError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/render.BodyError'
+      summary: Get by user id
+      tags:
+      - Orders
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"
